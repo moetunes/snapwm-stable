@@ -1,0 +1,4 @@
+28/2/13
+  Update adding fix for flicker in fullscreen mode when focusing next/previous window.
+  Added option to automatically change to a tiling mode from stacking mode when 
+    reaching set number of open windows.

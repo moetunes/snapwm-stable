@@ -21,11 +21,20 @@ All configuration is read from three files in ~/.config/snapwm/ . There
 
 *apps.conf* is optional and where apps settings are read from.
 
+
+###Development
+------------
+
+Enhancements and bugfixes are developed and tested in the Nextwm
+ repository first.
+
+
 ###Modes
 -----
 
-It allows the "normal" method of tiling window managers(with the new window as the master)
-    and with the new window opened at the bottom of the stack(like dwm's attach_aside)
+It allows the "normal" method of tiling window managers with the new
+    window as the master or with the new window opened at the bottom
+    or the top of the stack.
 
  *There's vertical tiling mode:*
 
@@ -74,13 +83,6 @@ It allows the "normal" method of tiling window managers(with the new window as t
  * Windows can be added/removed to/from the master area with keyboard shortcuts
  * There is a bar with a desktop switcher, space to show the focused window's name and space to show external text.
  * The rc files are reloadable 'on the run'.
-
-
-###Development
-------------
-
-Enhancements and bugfixes are developed and tested in the Nextwm
- repository first.
 
 
 ###Installation
