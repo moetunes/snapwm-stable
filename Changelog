@@ -1,3 +1,12 @@
+17/3/13
+  Fix for double clicking an empty desktop in the switcher killing the xserver.
+  Added check for a window manager already running.
+  Option to set the the initial number of extra windows in the master area for each desktop in rc.conf.
+  Add option in keys.conf for using no modifier key.
+  Remove flicker in fullscreen mode when changing desktops.
+  Don't change mode with windows open on update.
+  Enable multimedia keys by default.
+
 28/2/13
   Update adding fix for flicker in fullscreen mode when focusing next/previous window.
   Added option to automatically change to a tiling mode from stacking mode when 

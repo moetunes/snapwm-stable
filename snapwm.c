@@ -26,7 +26,7 @@
 #include <X11/XKBlib.h>
 //#include <X11/keysym.h>
 /* If you have a multimedia keyboard uncomment the following line */
-//#include <X11/XF86keysym.h>
+#include <X11/XF86keysym.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
@@ -361,30 +361,25 @@ void remove_client(client *cl, unsigned int dr, unsigned int tw) {
         } else current = NULL;
         if(dr == 0) free(cl);
         if(numwins < 3) growth = 0;
-        //else growth = growth*(numwins-1)/numwins;
-        if(nmaster > 0 && nmaster == (numwins-1)) nmaster -= 1;
         save_desktop(current_desktop);
         if(mode != 4) tile();
         XUnmapWindow(dis, cl->win);
-        warp_pointer();
         update_current();
         return;
     }
 }
 
 void next_win() {
-    client *c; Window w = current->win;
-
     if(numwins < 2) return;
-    c = (current->next == NULL) ? head : current->next;
-    current = c;
+    Window w = current->win;
+
+    current = (current->next == NULL) ? head : current->next;
     save_desktop(current_desktop);
     if(mode == 1) {
         tile();
         XUnmapWindow(dis, w);
     }
     update_current();
-    warp_pointer();
 }
 
 void prev_win() {
@@ -400,7 +395,6 @@ void prev_win() {
         XUnmapWindow(dis, w);
     }
     update_current();
-    warp_pointer();
 }
 
 void move_down(const Arg arg) {
@@ -469,7 +463,6 @@ void swap_master() {
     }
     save_desktop(current_desktop);
     tile();
-    warp_pointer();
     update_current();
 }
 
@@ -499,6 +492,24 @@ void change_desktop(const Arg arg) {
     save_desktop(current_desktop);
     previous_desktop = current_desktop;
 
+    // Take "properties" from the new desktop
+    select_desktop(arg.i);
+
+    if(next_view == barmon && has_bar == 1 && show_bar == 0) mapbar();
+    if(next_view == barmon && has_bar == 0 && show_bar == 1) unmapbar();
+
+    // Map all windows
+    if(head != NULL) {
+        if(mode != 1)
+            for(c=head;c;c=c->next)
+                XMapWindow(dis,c->win);
+        tile();
+    }
+    if(transient != NULL)
+        for(c=transient;c;c=c->next)
+            XMapWindow(dis,c->win);
+
+    select_desktop(previous_desktop);
     if(arg.i != view[next_view].cd) {
         select_desktop(view[next_view].cd);
         // Unmap all window
@@ -511,26 +522,9 @@ void change_desktop(const Arg arg) {
                 XUnmapWindow(dis,c->win);
     }
 
-    // Take "properties" from the new desktop
     select_desktop(arg.i);
-
-    if(next_view == barmon && has_bar == 1 && show_bar == 0) mapbar();
-    if(next_view == barmon && has_bar == 0 && show_bar == 1) unmapbar();
-
-    // Map all windows
-    if(head != NULL) {
-        if(mode != 1)
-            for(c=head;c;c=c->next)
-                XMapWindow(dis,c->win);
-    }
-    if(transient != NULL)
-        for(c=transient;c;c=c->next)
-            XMapWindow(dis,c->win);
-
     view[next_view].cd = current_desktop;
-    tile();
     update_current();
-    warp_pointer();
     if(STATUS_BAR == 0) update_bar();
 }
 
@@ -622,14 +616,13 @@ void more_master (const Arg arg) {
     }
     save_desktop(current_desktop);
     tile();
-    //update_current();
 }
 
 void tile() {
     if(head == NULL) return;
     client *c, *d=NULL;
     unsigned int x = 0, xpos = 0, ypos=0, wdt = 0, msw, ssw, ncols = 2, nrows = 1;
-    int ht = 0, y, n = 0;
+    int ht = 0, y, n = 0, nm = (numwins < 3) ? 0: (numwins-2 < nmaster) ? (numwins-2):nmaster;
     int scrx = desktops[current_desktop].x;
     int scry = desktops[current_desktop].y;
 
@@ -644,19 +637,19 @@ void tile() {
         switch(mode) {
             case 0: /* Vertical */
             	// Master window
-            	if(nmaster < 1)
+            	if(nm < 1)
                     XMoveResizeWindow(dis,head->win,scrx,scry+y,master_size - bdw,sh - bdw);
                 else {
                     for(d=head;d;d=d->next) {
-                        XMoveResizeWindow(dis,d->win,scrx,scry+ypos,master_size - bdw,sh/(nmaster+1) - bdw);
-                        if(x == nmaster) break;
-                        ypos += sh/(nmaster+1); ++x;
+                        XMoveResizeWindow(dis,d->win,scrx,scry+ypos,master_size - bdw,sh/(nm+1) - bdw);
+                        if(x == nm) break;
+                        ypos += sh/(nm+1); ++x;
                     }
                 }
 
                 // Stack
                 if(d == NULL) d = head;
-                n = numwins - (nmaster+1);
+                n = numwins - (nm+1);
                 XMoveResizeWindow(dis,d->next->win,scrx+master_size,scry+y,sw-master_size-bdw,(sh/n)+growth - bdw);
                 y += (sh/n)+growth;
                 for(c=d->next->next;c;c=c->next) {
@@ -670,19 +663,19 @@ void tile() {
                 break;
             case 2: /* Horizontal */
             	// Master window
-            	if(nmaster < 1)
+            	if(nm < 1)
                     XMoveResizeWindow(dis,head->win,scrx+xpos,scry+ypos,sw-bdw,master_size-bdw);
                 else {
                     for(d=head;d;d=d->next) {
-                        XMoveResizeWindow(dis,d->win,scrx+xpos,scry+ypos,sw/(nmaster+1)-bdw,master_size-bdw);
-                        if(x == nmaster) break;
-                        xpos += sw/(nmaster+1); ++x;
+                        XMoveResizeWindow(dis,d->win,scrx+xpos,scry+ypos,sw/(nm+1)-bdw,master_size-bdw);
+                        if(x == nm) break;
+                        xpos += sw/(nm+1); ++x;
                     }
                 }
 
                 // Stack
                 if(d == NULL) d = head;
-                n = numwins - (nmaster+1);
+                n = numwins - (nm+1);
                 XMoveResizeWindow(dis,d->next->win,scrx,scry+y+master_size,(sw/n)+growth-bdw,sh-master_size-bdw);
                 msw = (sw/n)+growth;
                 for(c=d->next->next;c;c=c->next) {
@@ -811,7 +804,7 @@ void update_current() {
             XRaiseWindow(dis,c->win);
     }
     if(STATUS_BAR == 0 && show_bar == 0) getwindowname();
-
+    warp_pointer();
     XSync(dis, False);
 }
 
@@ -970,13 +963,14 @@ void maprequest(XEvent *e) {
     if(STATUS_BAR == 0 && topbar == 0 && show_bar == 0) y = sb_height+4;
     // For fullscreen mplayer (and maybe some other program)
     client *c; Window w;
-    if(numwins > 0) w = current->win;
     for(c=head;c;c=c->next)
         if(ev->window == c->win) {
             XMapWindow(dis,ev->window);
             //XMoveResizeWindow(dis,c->win,0,y,sw+bdw,sh-y+bdw);
             return;
         }
+
+    w = (numwins > 0) ? current->win:0;
 
     Window trans = None;
     if (XGetTransientForHint(dis, ev->window, &trans) && trans != None) {
@@ -989,8 +983,6 @@ void maprequest(XEvent *e) {
         XSetInputFocus(dis,ev->window,RevertToParent,CurrentTime);
         return;
     }
-
-    w = (head != NULL) ? current->win:0;
 
     XClassHint ch = {0};
     unsigned int i=0, j=0, tmp = current_desktop, tmp2;
@@ -1029,7 +1021,6 @@ void maprequest(XEvent *e) {
     if(mode != 4) tile();
     if(mode != 1) XMapWindow(dis,ev->window);
     if(mode == 1 && numwins > 1) XUnmapWindow(dis, w);
-    warp_pointer();
     update_current();
     if(STATUS_BAR == 0) update_bar();
 }
@@ -1211,10 +1202,8 @@ void buttonrelease(XEvent *e) {
 void propertynotify(XEvent *e) {
     XPropertyEvent *ev = &e->xproperty;
 
-    if(ev->state == PropertyDelete) {
-        //logger("prop notify delete");
-        return;
-    } else
+    if(ev->state == PropertyDelete) return;
+    else
         if(STATUS_BAR == 0 && ev->window == root && ev->atom == XA_WM_NAME) update_output(0);
     else
         if(STATUS_BAR == 0) getwindowname();
@@ -1343,15 +1332,15 @@ void init_desks() {
                 desktops[j].h = info[i].height - bdw;
                 desktops[j].showbar = 1;
             }
+            if(!(desktops[j].mode)) desktops[j].mode = mode;
+            if(!(desktops[j].nmaster)) desktops[j].nmaster = nmaster;
             if(desktops[j].w > 0) continue;
             //printf("**screen is %d - desktop is %d **\n", i, j);
             desktops[j].x = info[i].x_org + last_width;
             desktops[j].y = info[i].y_org;
             desktops[j].w = info[i].width - bdw;
             //printf(" x=%d - y=%d - w=%d - h=%d \n", desktops[j].x, desktops[j].y, desktops[j].w, desktops[j].h);
-            if(!(desktops[j].mode)) desktops[j].mode = mode;
             desktops[j].master_size = (desktops[j].mode == 2) ? (desktops[j].h*msize)/100 : (desktops[j].w*msize)/100;
-            desktops[j].nmaster = 0;
             desktops[j].growth = 0;
             desktops[j].numwins = 0;
             desktops[j].head = NULL;
@@ -1372,11 +1361,12 @@ void setup() {
     // Screen and root window
     screen = DefaultScreen(dis);
     root = RootWindow(dis,screen);
+    XSelectInput(dis,root,SubstructureRedirectMask);
 
     // Initialize variables
     DESKTOPS = 4;
     topbar = followmouse = top_stack = mode = cstack = 0;
-    LA_WINDOWNAME = wnamebg = dowarp = doresize = 0;
+    LA_WINDOWNAME = wnamebg = dowarp = doresize = nmaster = 0;
     auto_mode = auto_num = 0;
     msize = 55;
     ufalpha = 75;
@@ -1397,7 +1387,7 @@ void setup() {
     set_defaults();
     read_rcfile();
 
-    // Set up all desktop
+    // Set up all desktops
     init_desks();
 
     if(STATUS_BAR == 0) {
@@ -1423,7 +1413,6 @@ void setup() {
 
     // To catch maprequest and destroynotify (if other wm running)
     XSelectInput(dis,root,SubstructureNotifyMask|SubstructureRedirectMask|PropertyChangeMask);
-    XSetErrorHandler(xerror);
     logger("\033[0;32mWe're up and running!");
 }
 
@@ -1457,7 +1446,10 @@ int xerror(Display *dis, XErrorEvent *ee) {
     || (ee->request_code == X_GrabKey && ee->error_code == BadAccess)
     || (ee->request_code == X_CopyArea && ee->error_code == BadDrawable))
         return 0;
-    logger("\033[0;31mBad Window Error!");
+    if(ee->error_code == BadAccess) {
+        logger("\033[0;31mIs Another Window Manager Running? Exiting!");
+        exit(1);
+    } else logger("\033[0;31mBad Window Error!");
     return xerrorxlib(dis, ee); /* may call exit */
 }
 
@@ -1470,13 +1462,14 @@ void start() {
     }
 }
 
-
 int main() {
     // Open display
     if(!(dis = XOpenDisplay(NULL))) {
         logger("\033[0;31mCannot open display!");
         exit(1);
     }
+
+    XSetErrorHandler(xerror);
 
     // Setup env
     setup();
