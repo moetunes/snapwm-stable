@@ -1,5 +1,6 @@
 22/3/13
   Check number of windows before anything else in prev_win
+  Fix for focus not returning to current window when an app is removed from another desktop.
 
 17/3/13
   Fix for double clicking an empty desktop in the switcher killing the xserver.
