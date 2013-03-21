@@ -1,3 +1,6 @@
+22/3/13
+  Check number of windows before anything else in prev_win
+
 17/3/13
   Fix for double clicking an empty desktop in the switcher killing the xserver.
   Added check for a window manager already running.
