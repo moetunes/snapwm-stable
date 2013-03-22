@@ -1026,7 +1026,7 @@ void maprequest(XEvent *e) {
 }
 
 void destroynotify(XEvent *e) {
-    unsigned int i = 0, tmp = current_desktop;
+    unsigned int i = 0, tmp = current_desktop, foundit = 0;
     client *c;
     XDestroyWindowEvent *ev = &e->xdestroywindow;
 
