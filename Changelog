@@ -1,3 +1,6 @@
+14/4/13
+  Fix for window border colours not updating when the config is updated
+
 22/3/13
   Check number of windows before anything else in prev_win
   Fix for focus not returning to current window when an app is removed from another desktop.
