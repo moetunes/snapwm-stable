@@ -1050,7 +1050,7 @@ void destroynotify(XEvent *e) {
         if(foundit == 1) break;
     }
     select_desktop(tmp);
-    update_current();
+    if(foundit > 0) update_current();
     if(STATUS_BAR == 0) update_bar();
 }
 
