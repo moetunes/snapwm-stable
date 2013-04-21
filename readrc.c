@@ -1,4 +1,4 @@
-// readrc.c [ 1.0.2 ]
+// readrc.c [ 1.0.3 ]
 
 /* *********************** Read Config File ************************ */
 void read_rcfile() {
@@ -116,6 +116,8 @@ void read_rcfile() {
                     wnamebg = atoi(strstr(buffer, " ")+1);
                 } else if(strstr(buffer, "TOPBAR" ) != NULL) {
                     topbar = atoi(strstr(buffer, " ")+1);
+                } else if(strstr(buffer, "SHOW_BAR" ) != NULL) {
+                    show_bar = atoi(strstr(buffer, " ")+1);
                 } else if(strstr(buffer, "MODENAME" ) != NULL) {
                     strncpy(dummy, strstr(buffer, " ")+1, strlen(strstr(buffer, " ")+1)-1);
                     dummy[strlen(dummy)-1] = '\0';

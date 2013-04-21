@@ -1,3 +1,9 @@
+22/4/13
+  Point update
+  Better Handling of mozilla products multiple destroy notify events...
+  Fix for SHOW_BAR option in rc.conf not doing anything
+  Marker for last focused desktop in the switcher
+
 21/4/13
   Fix for firefox menus disappearing when moving entries
 

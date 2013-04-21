@@ -25,7 +25,7 @@
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
 //#include <X11/keysym.h>
-/* If you have a multimedia keyboard uncomment the following line */
+/* For a multimedia keyboard */
 #include <X11/XF86keysym.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
@@ -97,7 +97,7 @@ typedef struct {
     XFontSet fontset;
     int height;
     int width;
-    unsigned int fh;            /* Y coordinate to draw characters */
+    unsigned int fh; /* Y coordinate to draw characters */
     int ascent;
     int descent;
 } Iammanyfonts;
@@ -347,7 +347,6 @@ void remove_client(client *cl, unsigned int dr, unsigned int tw) {
         transient = dummy;
         free(cl);
         save_desktop(current_desktop);
-        update_current();
         return;
     } else {
         head = dummy;
@@ -364,7 +363,6 @@ void remove_client(client *cl, unsigned int dr, unsigned int tw) {
         save_desktop(current_desktop);
         if(mode != 4) tile();
         XUnmapWindow(dis, cl->win);
-        update_current();
         return;
     }
 }
@@ -1039,7 +1037,7 @@ void destroynotify(XEvent *e) {
                 foundit = 1;
                 break;
             }
-        if(transient != NULL) {
+        if(transient != NULL && foundit < 1) {
             for(c=transient;c;c=c->next)
                 if(ev->window == c->win) {
                     remove_client(c, 0, 1);
@@ -1133,8 +1131,8 @@ void buttonpress(XEvent *e) {
             }
         }
 
-    if(ev->subwindow == None) return;
     select_desktop(cd);
+    if(ev->subwindow == None) return;
 
     i = 0;
     for(c=transient;c;c=c->next)
@@ -1152,7 +1150,6 @@ void buttonpress(XEvent *e) {
 }
 
 void motionnotify(XEvent *e) {
-    int xdiff, ydiff;
     client *c;
     XMotionEvent *ev = &e->xmotion;
 
@@ -1167,8 +1164,8 @@ void motionnotify(XEvent *e) {
     }
     if(doresize < 1) return;
     while(XCheckTypedEvent(dis, MotionNotify, e));
-    xdiff = ev->x_root - starter.x_root;
-    ydiff = ev->y_root - starter.y_root;
+    int xdiff = ev->x_root - starter.x_root;
+    int ydiff = ev->y_root - starter.y_root;
     XMoveResizeWindow(dis, ev->window,
         attr.x + (starter.button==1 ? xdiff : 0),
         attr.y + (starter.button==1 ? ydiff : 0),
@@ -1221,6 +1218,7 @@ void unmapnotify(XEvent *e) { // for thunderbird's write window and maybe others
                 if(ev->window == c->win) {
                     remove_client(c, 1, 1);
                     select_desktop(tmp);
+                    update_current();
                     return;
                 }
         }
@@ -1231,6 +1229,7 @@ void unmapnotify(XEvent *e) { // for thunderbird's write window and maybe others
                 if(ev->window == c->win) {
                     remove_client(c, 1, 0);
                     select_desktop(tmp);
+                    update_current();
                     if(STATUS_BAR == 0) update_bar();
                     return;
                 }
@@ -1253,6 +1252,7 @@ void kill_client() {
     if(head == NULL) return;
     kill_client_now(current->win);
     remove_client(current, 0, 0);
+    update_current();
     if(STATUS_BAR == 0) update_bar();
 }
 
