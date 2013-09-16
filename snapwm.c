@@ -260,7 +260,8 @@ void add_window(Window w, int tw, client *cl) {
         unsigned int i, j=0;
         if(XGetClassHint(dis, w, &chh)) {
             for(i=0;i<pcount;++i)
-                if(strcmp(chh.res_class, positional[i].class) == 0) {
+                if((strcmp(chh.res_class, positional[i].class) == 0) ||
+                  (strcmp(chh.res_name, positional[i].class) == 0)) {
                     XMoveResizeWindow(dis,w,desktops[current_desktop].x+positional[i].x,desktops[current_desktop].y+positional[i].y,positional[i].width,positional[i].height);
                     ++j;
                 }
@@ -271,14 +272,14 @@ void add_window(Window w, int tw, client *cl) {
             XGetWindowAttributes(dis, w, &attr);
             XMoveWindow(dis, w,desktops[current_desktop].x+desktops[current_desktop].w/2-(attr.width/2),desktops[current_desktop].y+(desktops[current_desktop].h+sb_height+4)/2-(attr.height/2));
         }
-        XGetWindowAttributes(dis, w, &attr);
-        c->x = attr.x;
-        if(topbar == 0 && attr.y < sb_height+4+bdw) c->y = sb_height+4+bdw;
-        else c->y = attr.y;
-        c->width = attr.width;
-        c->height = attr.height;
-        XMoveWindow(dis, w,c->x,c->y);
     }
+    XGetWindowAttributes(dis, w, &attr);
+    c->x = attr.x;
+    if(topbar == 0 && attr.y < sb_height+4+bdw) c->y = sb_height+4+bdw;
+    else c->y = attr.y;
+    c->width = attr.width;
+    c->height = attr.height;
+    XMoveWindow(dis, w,c->x,c->y);
 
     c->win = w; c->order = 0;
     dummy = (tw == 1) ? transient : head;
@@ -542,13 +543,13 @@ void rotate_mode(const Arg arg) {
 }
 
 void follow_client_to_desktop(const Arg arg) {
-    if(arg.i >= DESKTOPS || arg.i == current_desktop) return;
+    if(current == NULL || arg.i == current_desktop || arg.i >= DESKTOPS) return;
     client_to_desktop(arg);
     change_desktop(arg);
 }
 
 void client_to_desktop(const Arg arg) {
-    if(arg.i == current_desktop || current == NULL || arg.i >= DESKTOPS) return;
+    if(current == NULL || arg.i == current_desktop || arg.i >= DESKTOPS) return;
 
     client *tmp = current;
     unsigned int tmp2 = current_desktop, j, cd = desktops[current_desktop].screen;
@@ -742,12 +743,8 @@ void tile() {
                 }
                 break;
             case 4: // Stacking
-                for(n=numwins-1;n>=0;--n) {
-                    for(c=head;c;c=c->next) {
-                        if(c->order == n)
-                            XMoveResizeWindow(dis,c->win,c->x,c->y,c->width,c->height);
-                    }
-                }
+                    for(c=head;c;c=c->next)
+                        XMoveResizeWindow(dis,c->win,c->x,c->y,c->width,c->height);
                 break;
             }
             default:
@@ -757,7 +754,7 @@ void tile() {
 }
 
 void update_current() {
-    client *c; unsigned int border, tmp = current_desktop, i;
+    client *c, *d; unsigned int border, tmp = current_desktop, i;
     unsigned long opacity = (ufalpha/100.00) * 0xffffffff;
 
     save_desktop(current_desktop);
@@ -777,29 +774,35 @@ void update_current() {
     if(head == NULL) return;
 
     border = ((head->next == NULL && mode != 4) || (mode == 1)) ? 0 : bdw;
-    for(c=head;c;c=c->next) {
-        XSetWindowBorderWidth(dis,c->win,border);
-        if(c != current) {
-            if(c->order < current->order) ++c->order;
-            if(ufalpha < 100) XChangeProperty(dis, c->win, alphaatom, XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &opacity, 1l);
-            XSetWindowBorder(dis,c->win,theme[1].wincolor);
+    for(c=head;c->next;c=c->next);
+    for(d=c;d;d=d->prev) {
+        XSetWindowBorderWidth(dis,d->win,border);
+        if(d != current) {
+            if(d->order < current->order) ++d->order;
+            if(ufalpha < 100) XChangeProperty(dis, d->win, alphaatom, XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &opacity, 1l);
+            XSetWindowBorder(dis,d->win,theme[1].wincolor);
             if(clicktofocus == 0)
-                XGrabButton(dis, AnyButton, AnyModifier, c->win, True, ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
+                XGrabButton(dis, AnyButton, AnyModifier, d->win, True, ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
         }
         else {
             // "Enable" current window
-            if(ufalpha < 100) XDeleteProperty(dis, c->win, alphaatom);
-            XSetWindowBorder(dis,c->win,theme[0].wincolor);
-            XSetInputFocus(dis,c->win,RevertToParent,CurrentTime);
-            XRaiseWindow(dis,c->win);
+            if(ufalpha < 100) XDeleteProperty(dis, d->win, alphaatom);
+            XSetWindowBorder(dis,d->win,theme[0].wincolor);
+            if(transient == NULL)
+                XSetInputFocus(dis,d->win,RevertToParent,CurrentTime);
+            XRaiseWindow(dis,d->win);
             if(clicktofocus == 0)
-                XUngrabButton(dis, AnyButton, AnyModifier, c->win);
+                XUngrabButton(dis, AnyButton, AnyModifier, d->win);
         }
     }
     current->order = 0;
     if(transient != NULL) {
-        for(c=transient;c;c=c->next)
-            XRaiseWindow(dis,c->win);
+        for(c=transient;c->next;c=c->next);
+        for(d=c;d;d=d->prev) {
+            XMoveResizeWindow(dis,d->win,d->x,d->y,d->width,d->height);
+            XRaiseWindow(dis,d->win);
+        }
+        XSetInputFocus(dis,transient->win,RevertToParent,CurrentTime);
     }
     if(STATUS_BAR == 0 && show_bar == 0) getwindowname();
     warp_pointer();
@@ -986,7 +989,8 @@ void maprequest(XEvent *e) {
     unsigned int i=0, j=0, tmp = current_desktop, tmp2;
     if(XGetClassHint(dis, ev->window, &ch))
         for(i=0;i<dtcount;++i)
-            if(strcmp(ch.res_class, convenience[i].class) == 0) {
+            if((strcmp(ch.res_class, convenience[i].class) == 0) ||
+              (strcmp(ch.res_name, convenience[i].class) == 0)) {
                 tmp2 = (convenience[i].preferredd > DESKTOPS) ? DESKTOPS-1 : convenience[i].preferredd-1;
                 save_desktop(tmp);
                 select_desktop(tmp2);
@@ -1183,6 +1187,15 @@ void buttonrelease(XEvent *e) {
         return;
     }
     XUngrabPointer(dis, CurrentTime);
+    if(transient != NULL)
+        for(c=transient;c;c=c->next)
+            if(ev->window == c->win) {
+                XGetWindowAttributes(dis, c->win, &attr);
+                c->x = attr.x;
+                c->y = attr.y;
+                c->width = attr.width;
+                c->height = attr.height;
+            }
     if(mode == 4) {
         for(c=head;c;c=c->next)
             if(ev->window == c->win) {
