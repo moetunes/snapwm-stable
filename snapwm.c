@@ -167,6 +167,7 @@ static void rotate_desktop(const Arg arg);
 static void rotate_mode(const Arg arg);
 static void save_desktop(int i);
 static void select_desktop(int i);
+static void setbaralpha();
 static void setup();
 static void setup_status_bar();
 static void set_defaults();
@@ -201,7 +202,8 @@ static unsigned int sb_desks;        // width of the desktop switcher
 static unsigned int sb_height, sb_width, screen, show_bar, has_bar, wnamebg, barmon, barmonchange;
 static unsigned int showopen;        // whether the desktop switcher shows number of open windows
 static unsigned int topbar, top_stack, windownamelength, keycount, cmdcount, dtcount, pcount, LA_WINDOWNAME;
-static int ufalpha;
+static int ufalpha, baralpha;
+static unsigned long opacity, baropacity;
 static int xerror(Display *dis, XErrorEvent *ee);
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 unsigned int numlockmask, resizemovekey;        /* dynamic key lock mask */
@@ -755,7 +757,6 @@ void tile() {
 
 void update_current() {
     client *c, *d; unsigned int border, tmp = current_desktop, i;
-    unsigned long opacity = (ufalpha/100.00) * 0xffffffff;
 
     save_desktop(current_desktop);
     for(i=0;i<num_screens;++i) {
@@ -1326,33 +1327,34 @@ void logger(const char* e) {
 }
 
 void init_desks() {
-    int last_width=0, i, j;
+    int last_width=0, i, j, have_Xin = 0;
 
     XineramaScreenInfo *info = NULL;
     if(!(info = XineramaQueryScreens(dis, &num_screens))) {
         logger("XINERAMA Fail");
         num_screens = 1;
+        have_Xin = 1;
     }
     //printf("\t \nNumber of screens is %d\n\n", num_screens);
 
     if(barmon != barmonchange && barmonchange >= 0 && barmonchange < num_screens)
         barmon = barmonchange;
-    for (i = 0; i < num_screens; i++) {
+    for (i = 0; i < num_screens; ++i) {
         for(j=i;j<DESKTOPS;j+=num_screens) {
             if(i == barmon && STATUS_BAR == 0 && show_bar == 0) {
-                desktops[j].h = info[i].height - (sb_height+4+bdw);
+                desktops[j].h = ((have_Xin < 1) ? info[i].height:XDisplayHeight(dis, screen)) - (sb_height+4+bdw);
                 desktops[j].showbar = 0;
             } else {
-                desktops[j].h = info[i].height - bdw;
+                desktops[j].h = ((have_Xin < 1) ? info[i].height:XDisplayHeight(dis, screen)) - bdw;
                 desktops[j].showbar = 1;
             }
             if(!(desktops[j].mode)) desktops[j].mode = mode;
             if(!(desktops[j].nmaster)) desktops[j].nmaster = nmaster;
             if(desktops[j].w > 0) continue;
             //printf("**screen is %d - desktop is %d **\n", i, j);
-            desktops[j].x = info[i].x_org + last_width;
-            desktops[j].y = info[i].y_org;
-            desktops[j].w = info[i].width - bdw;
+            desktops[j].x = (have_Xin < 1) ? info[i].x_org + last_width:0;
+            desktops[j].y = (have_Xin < 1) ? info[i].y_org:0;
+            desktops[j].w = (have_Xin < 1) ? info[i].width - bdw:XDisplayWidth(dis, screen);
             //printf(" x=%d - y=%d - w=%d - h=%d \n", desktops[j].x, desktops[j].y, desktops[j].w, desktops[j].h);
             desktops[j].master_size = (desktops[j].mode == 2) ? (desktops[j].h*msize)/100 : (desktops[j].w*msize)/100;
             desktops[j].growth = 0;
@@ -1383,7 +1385,7 @@ void setup() {
     LA_WINDOWNAME = wnamebg = dowarp = doresize = nmaster = 0;
     auto_mode = auto_num = 0;
     msize = 55;
-    ufalpha = 75;
+    ufalpha = 75; baralpha = 90;
     bdw = 2;
     showopen = clicktofocus = attachaside = 1;
     resizemovekey = Mod1Mask;
@@ -1424,6 +1426,7 @@ void setup() {
     wm_delete_window = XInternAtom(dis, "WM_DELETE_WINDOW", False);
     protos = XInternAtom(dis, "WM_PROTOCOLS", False);
     update_current();
+    setbaralpha();
 
     // To catch maprequest and destroynotify (if other wm running)
     XSelectInput(dis,root,SubstructureNotifyMask|SubstructureRedirectMask|PropertyChangeMask);

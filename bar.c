@@ -1,4 +1,4 @@
-// bar.c [ 1.0.4 ]
+// bar.c [ 1.0.5 ]
 
 static void draw_numopen(unsigned int cd, unsigned int gc);
 static Drawable area_sb;
@@ -84,6 +84,15 @@ void mapbar() {
     for(int i=0;i<DESKTOPS;++i) XMapWindow(dis, sb_bar[i].sb_win);
     XMapWindow(dis, sb_area);
     has_bar = 0;
+}
+
+void setbaralpha() {
+    unsigned int i;
+    if(baralpha < 100) {
+        XChangeProperty(dis, sb_area, alphaatom, XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &baropacity, 1l);
+        for(i=0;i<DESKTOPS;++i)
+            XChangeProperty(dis, sb_bar[i].sb_win, alphaatom, XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &baropacity, 1l);
+    }
 }
 
 void getwindowname() {
@@ -247,7 +256,6 @@ void update_output(unsigned int messg) {
 unsigned int wc_size(char *string) {
     unsigned int num;
     XRectangle rect;
-
     num = strlen(string);
 
     if(font.fontset) {

@@ -1,3 +1,8 @@
+6/10/13
+  Point update [ 1.0.5 ]
+  Option to have the bar transparent when running a compositor
+  Fix for failed start when Xinerama info isn't available
+
 17/9/13
   Point update [ 1.0.4 ]
   Better ordering of windows when changing desktops
