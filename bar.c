@@ -1,4 +1,4 @@
-// bar.c [ 1.0.5 ]
+// bar.c [ 1.0.6 ]
 
 static void draw_numopen(unsigned int cd, unsigned int gc);
 static Drawable area_sb;
@@ -43,7 +43,7 @@ void status_bar() {
         sb_width += sb_bar[i].width;
     }
     sb_area = XCreateSimpleWindow(dis, root, desktops[barmon].x+sb_desks, y,
-             desktops[barmon].w-(sb_desks+2),sb_height,2,theme[3].barcolor,theme[1].barcolor);
+             desktops[barmon].w-lessbar-(sb_desks+2),sb_height,2,theme[3].barcolor,theme[1].barcolor);
 
     XSelectInput(dis, sb_area, ButtonPressMask|ExposureMask|EnterWindowMask|LeaveWindowMask);
     XMapWindow(dis, sb_area);

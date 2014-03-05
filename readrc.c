@@ -1,4 +1,4 @@
-// readrc.c [ 1.0.5 ]
+// readrc.c [ 1.0.6 ]
 
 /* *********************** Read Config File ************************ */
 void read_rcfile() {
@@ -8,7 +8,7 @@ void read_rcfile() {
     char *dummy2, *dummy3;
     unsigned int i; int j=-1;
 
-    rcfile = fopen( RC_FILE, "rb" ) ;
+    rcfile = fopen( RC_FILE, "r" ) ;
     if ( rcfile == NULL ) {
         fprintf(stderr, "\033[0;34m:: snapwm : \033[0;31m Couldn't find %s\033[0m \n" ,RC_FILE);
         set_defaults();
@@ -41,6 +41,9 @@ void read_rcfile() {
             } else if(strstr(buffer, "DESKTOPS" ) != NULL) {
                 DESKTOPS = atoi(strstr(buffer, " ")+1);
                 if(DESKTOPS > 10) DESKTOPS = 10;
+            } else if(strstr(buffer, "DEFAULT_DESK" ) != NULL) {
+                default_desk = atoi(strstr(buffer, " ")+1);
+                if(default_desk > DESKTOPS) default_desk = DESKTOPS;
             } else if(strstr(buffer, "UF_WIN_ALPHA" ) != NULL) {
                 ufalpha = atoi(strstr(buffer, " ")+1);
             } else if(strstr(buffer, "BAR_ALPHA" ) != NULL) {
@@ -112,6 +115,8 @@ void read_rcfile() {
                     }
                 } else if(strstr(buffer, "BAR_MONITOR" ) != NULL) {
                     barmonchange = atoi(strstr(buffer, " ")+1);
+                } else if(strstr(buffer, "BAR_SHORT" ) != NULL) {
+                    lessbar = atoi(strstr(buffer, " ")+1);
                 } else if(strstr(buffer, "SHOWNUMOPEN" ) != NULL) {
                     showopen = atoi(strstr(buffer, " ")+1);
                 } else if(strstr(buffer, "WNAMEBG" ) != NULL) {
@@ -266,7 +271,7 @@ void update_config() {
             }
             XSetWindowBorder(dis,sb_area,theme[3].barcolor);
             XSetWindowBackground(dis, sb_area, theme[1].barcolor);
-            XMoveResizeWindow(dis, sb_area, desktops[barmon].x+sb_desks, y, desktops[barmon].w-(sb_desks+4)+bdw,sb_height);
+            XMoveResizeWindow(dis, sb_area, desktops[barmon].x+sb_desks, y, desktops[barmon].w-(sb_desks+4)+bdw-lessbar,sb_height);
             XGetWindowAttributes(dis, sb_area, &attr);
             total_w = attr.width;
             if(area_sb != 0) {

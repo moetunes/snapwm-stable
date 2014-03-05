@@ -1,4 +1,4 @@
-/* readkeysapps.c [ 1.0.5 ] */
+/* readkeysapps.c [ 1.0.6 ] */
 
 void read_keys_file() {
     FILE *keyfile ;
@@ -87,6 +87,9 @@ void read_keys_file() {
                 } else if(strcmp(dummy3, "rotate_mode") == 0) {
                     keys[keycount].myfunction = rotate_mode;
                     keys[keycount].arg.i = atoi(strsep(&dummy2, ";"));
+                } else if(strcmp(dummy3, "terminate") == 0) {
+                    keys[keycount].myfunction = terminate;
+                    keys[keycount].arg.i = atoi(strsep(&dummy2, ";"));
                 } else if(strcmp(dummy3, "quit") == 0) keys[keycount].myfunction = quit;
                 else if(strcmp(dummy3, "next_win") == 0) keys[keycount].myfunction = next_win;
                 else if(strcmp(dummy3, "prev_win") == 0) keys[keycount].myfunction = prev_win;
@@ -98,8 +101,7 @@ void read_keys_file() {
                     dummy4 = strsep(&dummy2, ";");
                     for(i=0;i<cmdcount;++i) {
                         if(strcmp(dummy4, cmds[i].name) == 0) {
-                            keys[keycount].arg.com[0] = cmds[i].list[0];
-                            j=1;
+                            j=0;
                             while(strcmp(cmds[i].list[j], "NULL") != 0) {
                                 keys[keycount].arg.com[j] = cmds[i].list[j];
                                 ++j;
