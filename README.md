@@ -101,6 +101,13 @@ Need Xlib, then:
     $ make clean
 
 
+###Output in the Bar
+-----
+To have the time shown in the bar using bash:
+
+    while true; do sleep 1; line=$(date +%H:%M:%S); xsetroot -name "$line"; done
+
+
 ###Bugs
 ----
 
