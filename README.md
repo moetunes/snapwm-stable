@@ -88,7 +88,7 @@ It allows the "normal" method of tiling window managers with the new
 ###Installation
 ------------
 
-Need Xlib, then:
+Need Xlib, Xinerama and Xrandr, then:
 
     Copy the sample.rc.conf file to $HOME/.config/snapwm/rc.conf and edit it to suit.
 

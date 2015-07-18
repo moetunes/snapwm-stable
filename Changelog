@@ -1,3 +1,13 @@
+18/7/15
+  Xrandr capabilities added. Plug'n'play monitors
+  SHOW_BAR in rc.conf can now be set for each desktop
+  Useless gaps can be set around windows and the bar
+   in rc.conf
+  Can float a window in a tiling mode or pop it back in
+   with a keyboard shortcut
+  Can set a window to start out floating in apps.conf
+  Improvements in fullscreen mode
+
 5/3/14
   Point update [ 1.0.6 ]
   Better window management - can cycle through all windows - transients

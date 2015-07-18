@@ -1,4 +1,4 @@
-// bar.c [ 1.0.6 ]
+// bar.c [ 2.0.1 ]
 
 static void draw_numopen(unsigned int cd, unsigned int gc);
 static Drawable area_sb;
@@ -32,8 +32,8 @@ void setup_status_bar() {
 void status_bar() {
     unsigned int i, y;
 
-    y = (topbar == 0) ? 0 : desktops[barmon].h+bdw;
-    sb_width = 0;
+    y = (topbar == 0) ? 0+ug_bar : desktops[barmon].h+bdw-ug_bar;
+    sb_width = ug_bar;
     for(i=0;i<DESKTOPS;++i) {
         sb_bar[i].sb_win = XCreateSimpleWindow(dis, root, desktops[barmon].x+sb_width, y,
                                             sb_bar[i].width-2,sb_height,2,theme[3].barcolor,theme[0].barcolor);
@@ -42,8 +42,8 @@ void status_bar() {
         XMapWindow(dis, sb_bar[i].sb_win);
         sb_width += sb_bar[i].width;
     }
-    sb_area = XCreateSimpleWindow(dis, root, desktops[barmon].x+sb_desks, y,
-             desktops[barmon].w-lessbar-(sb_desks+2),sb_height,2,theme[3].barcolor,theme[1].barcolor);
+    sb_area = XCreateSimpleWindow(dis, root, desktops[barmon].x+sb_desks+ug_bar, y,
+             desktops[barmon].w-lessbar-(sb_desks+2)-2*ug_bar,sb_height,2,theme[3].barcolor,theme[1].barcolor);
 
     XSelectInput(dis, sb_area, ButtonPressMask|ExposureMask|EnterWindowMask|LeaveWindowMask);
     XMapWindow(dis, sb_area);
@@ -61,11 +61,11 @@ void toggle_bar() {
         if(has_bar == 0) {
             show_bar = 1;
             unmapbar();
-            desktops[current_desktop].h += sb_height+4;
+            desktops[current_desktop].h += sb_height+4+ug_bar;
         } else {
             show_bar = 0;
             mapbar();
-            desktops[current_desktop].h -= sb_height+4;
+            desktops[current_desktop].h -= sb_height+4+ug_bar;
             update_bar();
         }
 
@@ -95,13 +95,13 @@ void setbaralpha() {
     }
 }
 
-void getwindowname() {
+void getwindowname(Window win, unsigned int stext) {
     char *win_name;
 
-    if(head != NULL) {
-        (XFetchName(dis, current->win, &win_name) != 0) ? status_text(win_name) : status_text("");
-        XFree(win_name);
-    } else status_text("");
+    if(XFetchName(dis, win, &win_name) != 0) strncpy(winname, win_name, 100);
+    else winname[0] = '\0';
+    if(win_name) XFree(win_name);
+    if(stext == 0) status_text(winname);
 }
 
 void update_bar() {
@@ -111,7 +111,7 @@ void update_bar() {
         if(i != current_desktop) {
             if(desktops[i].head != NULL) {
                 draw_desk(sb_bar[i].sb_win, 2, 3, (sb_bar[i].width-sb_bar[i].labelwidth)/2, sb_bar[i].label, strlen(sb_bar[i].label));
-                if(showopen < 1 && desktops[i].numwins > 1) {
+                if(showopen < 1 && desktops[i].numorder > 1) {
                     draw_numopen(i, 3);
                 }
             } else {
@@ -121,12 +121,13 @@ void update_bar() {
                 XFillRectangle(dis, sb_bar[i].sb_win, theme[3].gc, 0, 0, 2, 2);
         } else {
             draw_desk(sb_bar[i].sb_win, 0, 1, (sb_bar[i].width-sb_bar[i].labelwidth)/2, sb_bar[i].label, strlen(sb_bar[i].label));
-            if(showopen < 1 && (desktops[i].mode == 1 || desktops[i].mode == 4) && desktops[i].numwins > 1) {
+            if(showopen == 0 && (desktops[i].mode == 1 || desktops[i].mode == 4) && desktops[i].numorder > 1) {
                 draw_numopen(i, 1);
             }
         }
     }
-    getwindowname();
+    if(focus != NULL) getwindowname(focus->win, 0);
+    else status_text("");
 }
 
 void draw_desk(Window win, unsigned int barcolor, unsigned int gc, unsigned int x, char *string, unsigned int len) {
@@ -141,7 +142,7 @@ void draw_desk(Window win, unsigned int barcolor, unsigned int gc, unsigned int 
 void draw_numopen(unsigned int cd, unsigned int gc) {
     unsigned int i, x=0, y=sb_height-2;
 
-    for(i=0;i<desktops[cd].numwins; ++i) {
+    for(i=0;i<desktops[cd].numorder; ++i) {
         XFillRectangle(dis, sb_bar[cd].sb_win, theme[gc].gc, x, y, 2, 2);
         x += 3;
         if((x+3) >= sb_bar[cd].width) return;
@@ -174,7 +175,7 @@ void status_text(char *sb_text) {
     text_start = (LA_WINDOWNAME < 1) ? blank_start : pos - text_length;
 
     draw_text(area_sb, 4, font.width*2, theme[mode].modename, strlen(theme[mode].modename));
-    XFillRectangle(dis, area_sb, theme[wnamebg].gc, text_start, 0, text_length, sb_height+4);
+    XFillRectangle(dis, area_sb, theme[wnamebg].swgc, text_start, 0, text_length, sb_height+4);
     draw_text(area_sb, 4, text_start, win_name, count);
     XCopyArea(dis, area_sb, sb_area, theme[1].gc, 0, 0, pos, sb_height+4, 0, 0);
 }
@@ -190,10 +191,11 @@ void update_output(unsigned int messg) {
         strcpy(output, "&3 snapwm inc. ");
         text_length = 15;
     } else {
-        while(win_name[text_length] != '\0' && text_length < 256) {
+        while(&win_name[text_length] != '\0' && text_length < 256) {
             output[text_length] = win_name[text_length];
             ++text_length;
         }
+        text_length += 1;
         output[text_length] = '\0';
     }
     XFree(win_name);
