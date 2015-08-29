@@ -1,3 +1,6 @@
+29/8/15
+  Fix for xsetroot fail
+
 18/7/15
   Xrandr capabilities added. Plug'n'play monitors
   SHOW_BAR in rc.conf can now be set for each desktop
