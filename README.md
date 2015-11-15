@@ -10,7 +10,7 @@ Screenshots and ramblings/updates at https://bbs.archlinux.org/viewtopic.php?id=
 -------
 
 
-**snapwm** is a xinerama aware, minimal and lightweight dynamic tiling window manager.
+**snapwm** is a xinerama and Xrandr aware, minimal and lightweight dynamic tiling window manager.
 
 All configuration is read from three files in ~/.config/snapwm/ . There
  are well commented samples of each file to assit in initial setting up.
