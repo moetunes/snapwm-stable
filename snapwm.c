@@ -484,12 +484,12 @@ void pop_window() {
         }
         tile();
     } else {
-        Window win = current->win;
+        Window win = (current == NULL) ? 0:current->win;
         focus->trans = 0;
         numwins += 1;
         current = focus;
         tile();
-        if(mode == 1) XUnmapWindow(dis, win);
+        if(mode == 1 && numwins > 1) XUnmapWindow(dis, win);
     }
     update_current();
 }

@@ -1,6 +1,7 @@
 23/11/15
   Fix for keyboards shortcuts using Alt failing
   Fix for window not unmapping with client_to_desktop
+  Fix for popping a window back with one window in fullscreen mode
 
 16/11/15
   Modifying key ALTSuper changed to AltSuper for consistency
