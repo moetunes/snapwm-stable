@@ -36,7 +36,7 @@ void read_keys_file() {
                     else if(strncmp(dummy, "Super", 5) == 0) keys[keycount].mod = Mod4Mask;
                     else if(strncmp(dummy, "CtrlSuper", 9) == 0) keys[keycount].mod = Mod4Mask|ControlMask;
                     else if(strncmp(dummy, "ShftSuper", 9) == 0) keys[keycount].mod = Mod4Mask|ShiftMask;
-                    else if(strncmp(dummy, "ALT", 3) == 0) keys[keycount].mod = Mod1Mask;
+                    else if(strncmp(dummy, "Alt", 3) == 0) keys[keycount].mod = Mod1Mask;
                     else if(strncmp(dummy, "NULL", 4) == 0) keys[keycount].mod = 0;
                     else continue;
                 }
