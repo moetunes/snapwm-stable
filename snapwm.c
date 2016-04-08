@@ -1242,7 +1242,6 @@ void spawn(const Arg arg) {
     }
 }
 
-
 void start() {
     XEvent ev;
 

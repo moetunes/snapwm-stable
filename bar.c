@@ -1,4 +1,4 @@
-// bar.c [ 2.0.2 ]
+// bar.c [ 2.0.3 ]
 
 static void draw_numopen(unsigned int cd, unsigned int gc);
 static Drawable area_sb;
@@ -266,4 +266,22 @@ unsigned int wc_size(char *string) {
     } else {
         return XTextWidth(font.font, string, num);
     }
+}
+
+void bar_rt_click() {
+    if(barrtclkarg.com[0] == 0) {
+        unsigned int i, j=0;
+        for(i=0;i<cmdcount;++i) {
+            if(strncmp("barrtclickcmd", cmds[i].name, 13) == 0) {
+                while(strncmp(cmds[i].list[j], "NULL", 4) != 0) {
+                    barrtclkarg.com[j] = cmds[i].list[j];
+                    ++j;
+                }
+                barrtclkarg.com[j] = NULL;
+            }
+        }
+    }
+    if(barrtclkarg.com == NULL) return;
+    spawn(barrtclkarg);
+    return;
 }

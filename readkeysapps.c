@@ -1,4 +1,4 @@
-/* readkeysapps.c [ 2.0.2 ] */
+/* readkeysapps.c [ 2.0.3 ] */
 
 void read_keys_file() {
     FILE *keyfile ;
@@ -45,6 +45,7 @@ void read_keys_file() {
                 if(get_value() == 0) {
                     if(strcmp(dummy, "kill_client") == 0) keys[keycount].myfunction = kill_client;
                     else if(strcmp(dummy, "last_desktop") == 0) keys[keycount].myfunction = last_desktop;
+                    else if(strcmp(dummy, "last_win") == 0) keys[keycount].myfunction = last_win;
                     else if(strcmp(dummy, "change_desktop") == 0) {
                         keys[keycount].myfunction = change_desktop;
                         get_value();
@@ -101,7 +102,12 @@ void read_keys_file() {
                         keys[keycount].myfunction = terminate;
                         get_value();
                         keys[keycount].arg.i = strtol(dummy, NULL, 10);
-                    } else if(strcmp(dummy, "quit") == 0) keys[keycount].myfunction = quit;
+                    } else if(strcmp(dummy, "sticky_win") == 0) {
+                        keys[keycount].myfunction = sticky_win;
+                        get_value();
+                        keys[keycount].arg.i = strtol(dummy, NULL, 10);
+                    } else if(strcmp(dummy, "unsticky_win") == 0) keys[keycount].myfunction = unsticky_win;
+                    else if(strcmp(dummy, "quit") == 0) keys[keycount].myfunction = quit;
                     else if(strcmp(dummy, "next_win") == 0) keys[keycount].myfunction = next_win;
                     else if(strcmp(dummy, "prev_win") == 0) keys[keycount].myfunction = prev_win;
                     else if(strcmp(dummy, "swap_master") == 0) keys[keycount].myfunction = swap_master;

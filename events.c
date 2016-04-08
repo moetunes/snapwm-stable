@@ -1,4 +1,4 @@
-// events.c [ 2.0.2 ]
+// events.c [ 2.0.3 ]
 
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
@@ -49,17 +49,8 @@ void maprequest(XEvent *e) {
     unsigned int i=0, j=0, tmp = current_desktop, tmp2, move = 0;
     save_desktop(tmp);
     Window trans = None; unsigned int tranny = 0;
-    if (XGetTransientForHint(dis, ev->window, &trans) && trans != None) {
+    if (XGetTransientForHint(dis, ev->window, &trans) && trans != None)
         tranny = 1;
-        for(i=current_desktop;i<current_desktop+DESKTOPS;++i) {
-            select_desktop(i%DESKTOPS);
-            for(c=head;c;c=c->next)
-                if(c->win == trans) {
-                    j = 1; break;
-                }
-            if(j == 1) break;
-        }
-    }
 
     getwindowname(ev->window, 1);
     XClassHint ch = {0};
@@ -115,8 +106,7 @@ void maprequest(XEvent *e) {
     if(mode == 1 && numwins > 1 && move == 0) XUnmapWindow(dis, w);
     for(i=0;i<num_screens;++i)
         if(current_desktop == view[i].cd) {
-            if(mode != 1 ) XMapWindow(dis,ev->window);
-            if(mode == 1 && tranny == 1) XMapWindow(dis,ev->window);
+            if(tranny == 1 || mode != 1 ) XMapWindow(dis,ev->window);
             tile();
         }
     if(move == 0) select_desktop(tmp);
@@ -125,7 +115,7 @@ void maprequest(XEvent *e) {
 }
 
 void destroynotify(XEvent *e) {
-    unsigned int i = 0, tmp = current_desktop, foundit = 0;
+    unsigned int i, j, k, tmp = current_desktop;
     client *c;
     XDestroyWindowEvent *ev = &e->xdestroywindow;
 
@@ -134,18 +124,24 @@ void destroynotify(XEvent *e) {
         select_desktop(i%DESKTOPS);
         for(c=head;c;c=c->next)
             if(ev->window == c->win) {
-                remove_client(c, 0, 0);
-                foundit = 1;
+                remove_client(c, 0);
+                for(j=0;j<num_screens;++j)
+                    if(current_desktop == view[j].cd)
+                        if(mode != 4) tile();
+                if(current_desktop == tmp) update_current();
+                for(j=0;j<numstuck;++j)
+                    if(stuck[j].win == c->win) {
+                        stuck[j].numstuck -= 1;
+                        if(stuck[j].numstuck == 0)
+                            for(k=0;k+j<numstuck-1;++k) {
+                                stuck[k].win = stuck[k+1].win;
+                                stuck[k].numstuck = stuck[k+1].numstuck;
+                            }
+                            numstuck -= 1;
+                    }
                 break;
             }
-        if(foundit == 1) break;
     }
-    if(foundit == 1)
-        for(i=0;i<num_screens;++i)
-            if(current_desktop == view[i].cd) {
-                if(mode != 4) tile();
-            }
-    if(foundit == 1 && current_desktop == tmp) update_current();
     select_desktop(tmp);
     if(STATUS_BAR == 0) update_bar();
 }
@@ -186,9 +182,13 @@ void buttonpress(XEvent *e) {
 
     if(STATUS_BAR == 0) {
         if(sb_area == (ev->subwindow | ev->window)) {
-            Arg a = {.i = previous_desktop};
-            dowarp = 1;
-            change_desktop(a);
+            if(ev->button == Button3) {
+                bar_rt_click();
+            } else {
+                Arg a = {.i = previous_desktop};
+                dowarp = 1;
+                change_desktop(a);
+            }
             return;
         }
         for(i=0;i<DESKTOPS;++i)
@@ -219,7 +219,7 @@ void buttonpress(XEvent *e) {
             select_desktop(view[i%num_screens].cd);
             for(c=head;c;c=c->next)
                 if(ev->window == c->win) {
-                    if(cd != current_desktop || c != focus) {
+                    if((cd == current_desktop && c != focus) || cd != current_desktop) {
                         foundit = 1;
                         if(c->trans == 0) focus = current = c;
                         else focus = c;
@@ -356,7 +356,7 @@ void unmapnotify(XEvent *e) { // for thunderbird's write window and maybe others
     if(ev->send_event == 1) {
         for(c=head;c;c=c->next)
             if(ev->window == c->win) {
-                remove_client(c, 1, 0);
+                remove_client(c, 1);
                 if(mode != 4) tile();
                 update_current();
                 if(STATUS_BAR == 0) update_bar();
