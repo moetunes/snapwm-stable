@@ -1,4 +1,4 @@
-// events.c [ 2.0.3 ]
+// events.c [ 2.0.4 ]
 
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;

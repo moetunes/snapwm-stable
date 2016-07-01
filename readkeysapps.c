@@ -1,4 +1,4 @@
-/* readkeysapps.c [ 2.0.3 ] */
+/* readkeysapps.c [ 2.0.4 ] */
 
 void read_keys_file() {
     FILE *keyfile ;
@@ -8,7 +8,7 @@ void read_keys_file() {
     keyfile = fopen( KEY_FILE, "r" ) ;
     if ( keyfile == NULL ) {
         fprintf(stderr, "\033[0;34m snapwm : \033[0;31m Couldn't find %s\033[0m \n" ,KEY_FILE);
-        return;
+        quit();
     } else {
         while(fgets(buffer,sizeof buffer,keyfile) != NULL) {
             /* Check for comments */
