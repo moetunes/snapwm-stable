@@ -1,4 +1,4 @@
-// bar.c [ 2.0.4 ]
+// bar.c [ 2.0.5 ]
 
 static void draw_numopen(unsigned int cd, unsigned int gc);
 static Drawable area_sb;
@@ -31,6 +31,9 @@ void setup_status_bar() {
 
 void status_bar() {
     unsigned int i, y;
+    XSetWindowAttributes setattr;
+    setattr.override_redirect = True;
+    unsigned long vmask = CWOverrideRedirect;
 
     y = (topbar == 0) ? 0+ug_bar : desktops[barmon].h+bdw-ug_bar;
     sb_width = ug_bar;
@@ -39,6 +42,7 @@ void status_bar() {
                                             sb_bar[i].width-2,sb_height,2,theme[3].barcolor,theme[0].barcolor);
 
         XSelectInput(dis, sb_bar[i].sb_win, ButtonPressMask|EnterWindowMask|LeaveWindowMask);
+        XChangeWindowAttributes(dis, sb_bar[i].sb_win, vmask, &setattr);
         XMapWindow(dis, sb_bar[i].sb_win);
         sb_width += sb_bar[i].width;
     }
@@ -46,7 +50,9 @@ void status_bar() {
              desktops[barmon].w-lessbar-(sb_desks+2)-2*ug_bar,sb_height,2,theme[3].barcolor,theme[1].barcolor);
 
     XSelectInput(dis, sb_area, ButtonPressMask|ExposureMask|EnterWindowMask|LeaveWindowMask);
+    XChangeWindowAttributes(dis, sb_area, vmask, &setattr);
     XMapWindow(dis, sb_area);
+    XWindowAttributes attr;
     XGetWindowAttributes(dis, sb_area, &attr);
     total_w = attr.width;
     area_sb = XCreatePixmap(dis, root, total_w, sb_height, DefaultDepth(dis, screen));
@@ -198,7 +204,7 @@ void update_output(unsigned int messg) {
         text_length += 1;
         output[text_length] = '\0';
     }
-    XFree(win_name);
+    if(win_name) XFree(win_name);
 
     for(n=0;n<text_length;++n) {
         while(output[n] == '&') {

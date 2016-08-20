@@ -1,3 +1,7 @@
+21/8/16
+  Apps started before the window manager are now managed
+  Minimum window size set in rc.conf
+
 1/7/16
   Quit if no keys file found...
 

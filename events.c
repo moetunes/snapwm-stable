@@ -1,4 +1,4 @@
-// events.c [ 2.0.4 ]
+// events.c [ 2.0.5 ]
 
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
@@ -28,33 +28,41 @@ void configurerequest(XEvent *e) {
 void maprequest(XEvent *e) {
     XMapRequestEvent *ev = &e->xmaprequest;
 
-    XGetWindowAttributes(dis, ev->window, &attr);
+    map_window(ev->window);
+}
+
+void map_window(Window neww) {
+    XWindowAttributes attr;
+    if(XGetWindowAttributes(dis, neww, &attr) == 0) return;
     if(attr.override_redirect == True) return;
-    if(check_dock(ev->window) == 0) {
-         XMapWindow(dis,ev->window);
+    if(check_dock(neww) == 0) {
+         XMapWindow(dis,neww);
          return;
     }
 
     // For fullscreen mplayer (and maybe some other program)
     client *c;
     for(c=head;c;c=c->next)
-        if(ev->window == c->win) {
-            XMapWindow(dis,ev->window);
+        if(neww == c->win) {
+            XMapWindow(dis,neww);
             return;
         }
 
-    Window w;
-    w = (numwins > 0) ? current->win:0;
-
     unsigned int i=0, j=0, tmp = current_desktop, tmp2, move = 0;
+
+    if(attr.width < minww || attr.height < minwh) {
+        XMoveResizeWindow(dis, neww, attr.x, attr.y, minww, minwh);
+        ++j;
+    }
+
     save_desktop(tmp);
     Window trans = None; unsigned int tranny = 0;
-    if (XGetTransientForHint(dis, ev->window, &trans) && trans != None)
+    if (XGetTransientForHint(dis, neww, &trans) && trans != None)
         tranny = 1;
 
-    getwindowname(ev->window, 1);
+    getwindowname(neww, 1);
     XClassHint ch = {0};
-    if(XGetClassHint(dis, ev->window, &ch)) {
+    if(XGetClassHint(dis, neww, &ch)) {
         for(i=0;i<dtcount;++i) {
             if((strcmp(winname, convenience[i].class) == 0) ||
               (tranny == 0 && strcmp(ch.res_class, convenience[i].class) == 0) ||
@@ -70,12 +78,11 @@ void maprequest(XEvent *e) {
                 }
             }
         }
-        j = 0;
         for(i=0;i<pcount;++i) {
             if((strcmp(winname, positional[i].class) == 0) ||
               (tranny == 0 && strcmp(ch.res_class, positional[i].class) == 0) ||
               (tranny == 0 && strcmp(ch.res_name, positional[i].class) == 0)) {
-                XMoveResizeWindow(dis,ev->window,positional[i].x,positional[i].y,positional[i].width,positional[i].height);
+                XMoveResizeWindow(dis,neww,positional[i].x,positional[i].y,positional[i].width,positional[i].height);
                 ++j;
                 break;
             }
@@ -87,28 +94,35 @@ void maprequest(XEvent *e) {
                 ++j;
                 tranny = 1;
                 if((desktops[current_desktop].x+attr.x+attr.width) < (desktops[current_desktop].x+sw))
-                    XMoveResizeWindow(dis, ev->window, desktops[current_desktop].x+attr.x, attr.y, attr.width, attr.height);
+                    XMoveResizeWindow(dis, neww, desktops[current_desktop].x+attr.x, attr.y, attr.width, attr.height);
                 else
-                    XMoveResizeWindow(dis, ev->window, desktops[current_desktop].x+(sw/2)-attr.width/2, attr.y, attr.width, attr.height);
+                    XMoveResizeWindow(dis, neww, desktops[current_desktop].x+(sw/2)-attr.width/2, attr.y, attr.width, attr.height);
                 break;
             }
         }
         if(tranny == 0 && j == 0 && cstack == 0) {
             ++j;
-            XMoveWindow(dis, ev->window,desktops[current_desktop].w/2-(attr.width/2),(desktops[current_desktop].h+sb_height+4+ug_bar)/2-(attr.height/2));
+            XMoveWindow(dis, neww,desktops[current_desktop].w/2-(attr.width/2),(desktops[current_desktop].h+sb_height+4+ug_bar)/2-(attr.height/2));
         }
     }
     if(ch.res_class) XFree(ch.res_class);
     if(ch.res_name) XFree(ch.res_name);
-    if(j > 0) XGetWindowAttributes(dis, ev->window, &attr);
+    if(j > 0) XGetWindowAttributes(dis, neww, &attr);
 
-    add_window(ev->window, tranny, NULL, attr.x, attr.y, attr.width, attr.height);
-    if(mode == 1 && numwins > 1 && move == 0) XUnmapWindow(dis, w);
+    c = current; j = 0;
+    add_window(neww, tranny, NULL, attr.x, attr.y, attr.width, attr.height);
+    if(mode == 1 && numwins > 1 && move == 0)
+        XMoveWindow(dis,c->win,c->x,2*desktops[DESKTOPS-1].h);
     for(i=0;i<num_screens;++i)
         if(current_desktop == view[i].cd) {
-            if(tranny == 1 || mode != 1 ) XMapWindow(dis,ev->window);
             tile();
+            XMapWindow(dis,neww);
+            ++j;
         }
+    if(j == 0) {
+        XMoveWindow(dis,neww,0,2*desktops[DESKTOPS-1].h);
+        XMapWindow(dis,neww);
+    }
     if(move == 0) select_desktop(tmp);
     update_current();
     if(STATUS_BAR == 0) update_bar();
@@ -255,7 +269,7 @@ void buttonpress(XEvent *e) {
     XGrabPointer(dis, ev->subwindow, True,
         PointerMotionMask|ButtonReleaseMask, GrabModeAsync,
         GrabModeAsync, None, None, CurrentTime);
-    XGetWindowAttributes(dis, ev->subwindow, &attr);
+    XGetWindowAttributes(dis, ev->subwindow, &mattr);
     starter = e->xbutton; doresize = 1;
 }
 
@@ -278,14 +292,15 @@ void motionnotify(XEvent *e) {
     int xdiff = ev->x_root - starter.x_root;
     int ydiff = ev->y_root - starter.y_root;
     XMoveResizeWindow(dis, ev->window,
-        attr.x + (starter.button==1 ? xdiff : 0),
-        attr.y + (starter.button==1 ? ydiff : 0),
-        MAX(1, attr.width + (starter.button==3 ? xdiff : 0)),
-        MAX(1, attr.height + (starter.button==3 ? ydiff : 0)));
+        mattr.x + (starter.button==1 ? xdiff : 0),
+        mattr.y + (starter.button==1 ? ydiff : 0),
+        MAX(1, mattr.width + (starter.button==3 ? xdiff : 0)),
+        MAX(1, mattr.height + (starter.button==3 ? ydiff : 0)));
 }
 
 void buttonrelease(XEvent *e) {
     client *c;
+    XWindowAttributes attr;
     XButtonEvent *ev = &e->xbutton;
 
     XUngrabPointer(dis, CurrentTime);
@@ -387,8 +402,8 @@ int xerror(Display *dis, XErrorEvent *ee) {
     || (ee->request_code == X_CopyArea && ee->error_code == BadDrawable))
         return 0;
     if(ee->error_code == BadAccess) {
-        logger("\033[0;31mIs Another Window Manager Running? Exiting!");
+        logger("\033[0;31mIs Another Window Manager Running? Exiting!", "");
         exit(1);
-    } else logger("\033[0;31mBad Window Error!");
+    } else logger("\033[0;31mBad Window Error!", "");
     return xerrorxlib(dis, ee); /* may call exit */
 }

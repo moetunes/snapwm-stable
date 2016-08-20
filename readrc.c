@@ -1,4 +1,4 @@
-// readrc.c [ 2.0.4 ]
+// readrc.c [ 2.0.5 ]
 
 unsigned int i, k=0, c=0;
 int j=-1;
@@ -44,7 +44,7 @@ void read_rcfile() {
                         theme[i].wincolor = getcolor(dummy);
                         if(theme[i].wincolor == 1) {
                             theme[i].wincolor = getcolor(defaultwincolor[i]);
-                            logger("Default Window Border Colour");
+                            logger("Default Window Border Colour", "");
                         }
                     }
                 }
@@ -76,7 +76,7 @@ void read_rcfile() {
                 }
             } else if(strstr(buffer, "BAR_ALPHA" ) != NULL) {
                 k = 10;
-                if(get_value() <1) {
+                if(get_value() == 0) {
                     baralpha = strtol(dummy, NULL, 10);
                     if(baralpha < 1 || baralpha > 100)
                         baralpha = 100;
@@ -123,11 +123,11 @@ void read_rcfile() {
                         clicktofocus = strtol(dummy, NULL, 10);
             } else if(strstr(buffer, "AUTO_NUM_OPEN" ) != NULL) {
                 k = 14;
-                if(get_value() <1)
+                if(get_value() == 0)
                     auto_num = strtol(dummy, NULL, 10);
             } else if(strstr(buffer, "AUTO_MODE" ) != NULL) {
                 k = 10;
-                if(get_value() <1) {
+                if(get_value() == 0) {
                     k = strtol(dummy, NULL, 10);
                     if(k >= 0 && k < 5)
                         auto_mode = k;
@@ -150,17 +150,25 @@ void read_rcfile() {
                         else desktops[i].nmaster = 0;
                     }
                 }
+            } else if(strstr(buffer, "MINW_H" ) != NULL) {
+                k = 7;
+                if(get_value() == 0)
+                    minww = strtol(dummy, NULL, 10);
+            } else if(strstr(buffer, "MINW_W" ) != NULL) {
+                k = 7;
+                if(get_value() == 0)
+                    minwh = strtol(dummy, NULL, 10);
             } else if(strstr(buffer, "UG_OUT" ) != NULL) {
                 k = 7;
-                if(get_value() <1)
+                if(get_value() == 0)
                     ug_out = strtol(dummy, NULL, 10);
             } else if(strstr(buffer, "UG_IN" ) != NULL) {
                 k = 6;
-                if(get_value() <1)
+                if(get_value() == 0)
                     ug_in = strtol(dummy, NULL, 10);
             } else if(strstr(buffer, "UG_BAR" ) != NULL) {
                 k = 6;
-                if(get_value() <1)
+                if(get_value() == 0)
                     ug_bar = strtol(dummy, NULL, 10);
             } else if(STATUS_BAR == 0) {
                 if(strstr(buffer, "SWITCHERTHEME" ) != NULL) {
@@ -178,7 +186,7 @@ void read_rcfile() {
                             theme[i].textcolor = getcolor(dummy);
                             if(theme[i].textcolor == 1) {
                                 theme[i].textcolor = getcolor(defaulttextcolor[i]);
-                                logger("Default text colour");
+                                logger("Default text colour", "");
                             }
                         }
                     }
@@ -320,7 +328,7 @@ void set_defaults() {
         sb_height = font.height+2;
         font.fh = ((sb_height - font.height)/2) + font.ascent;
     }
-    logger("\033[0;32m Setting default values");
+    logger("\033[0;32m Setting default values", "");
     return;
 }
 
@@ -364,6 +372,7 @@ void update_config() {
             XSetWindowBorder(dis,sb_area,theme[3].barcolor);
             XSetWindowBackground(dis, sb_area, theme[1].barcolor);
             XMoveResizeWindow(dis, sb_area, desktops[barmon].x+sb_width, y, desktops[barmon].w-(sb_desks+4)+bdw-lessbar-2*ug_bar,sb_height);
+            XWindowAttributes attr;
             XGetWindowAttributes(dis, sb_area, &attr);
             total_w = attr.width;
             if(area_sb != 0) {
@@ -374,9 +383,7 @@ void update_config() {
         }
     }
     if(mode == 1 && head != NULL) {
-        client *c;
-        XUnmapWindow(dis, current->win);
-        for(c=head;c;c=c->next) XMapWindow(dis, c->win);
+        XMoveWindow(dis,current->win,current->x,2*desktops[DESKTOPS-1].h);
     }
     for(i=0;i<DESKTOPS;++i)
         desktops[i].master_size = (desktops[i].mode == 2) ? (desktops[i].h*msize)/100 : (desktops[i].w*msize)/100;
