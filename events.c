@@ -1,4 +1,4 @@
-// events.c [ 2.0.5 ]
+// events.c [ 2.0.6 ]
 
 void configurerequest(XEvent *e) {
     XConfigureRequestEvent *ev = &e->xconfigurerequest;
@@ -111,7 +111,7 @@ void map_window(Window neww) {
 
     c = current; j = 0;
     add_window(neww, tranny, NULL, attr.x, attr.y, attr.width, attr.height);
-    if(mode == 1 && numwins > 1 && move == 0)
+    if(mode == 1 && numwins > 1 && move == 0 && tranny == 0)
         XMoveWindow(dis,c->win,c->x,2*desktops[DESKTOPS-1].h);
     for(i=0;i<num_screens;++i)
         if(current_desktop == view[i].cd) {
@@ -146,12 +146,13 @@ void destroynotify(XEvent *e) {
                 for(j=0;j<numstuck;++j)
                     if(stuck[j].win == c->win) {
                         stuck[j].numstuck -= 1;
-                        if(stuck[j].numstuck == 0)
+                        if(stuck[j].numstuck == 0) {
                             for(k=0;k+j<numstuck-1;++k) {
                                 stuck[k].win = stuck[k+1].win;
                                 stuck[k].numstuck = stuck[k+1].numstuck;
                             }
-                            numstuck -= 1;
+                        }
+                        numstuck -= 1;
                     }
                 break;
             }

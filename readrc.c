@@ -1,4 +1,4 @@
-// readrc.c [ 2.0.5 ]
+// readrc.c [ 2.0.6 ]
 
 unsigned int i, k=0, c=0;
 int j=-1;
@@ -205,9 +205,10 @@ void read_rcfile() {
                             showopen = strtol(dummy, NULL, 10);
                 } else if(strstr(buffer, "WNAMEBG" ) != NULL) {
                     k = 8;
-                    if(get_value() == 0)
+                    if(get_value() == 0) {
                         wnamebg = strtol(dummy, NULL, 10);
                         wnamebg = (wnamebg < 5) ? wnamebg:0;
+                    }
                 } else if(strstr(buffer, "TOPBAR" ) != NULL) {
                     k = 7;
                     if(get_value() == 0)
@@ -277,8 +278,9 @@ void get_font() {
 	    font.fontset = XCreateFontSet(dis, (char *)font_list, &missing, &n, &def);
 	if(missing) {
 		if(FONTS_ERROR < 1)
-            while(--n)
+            while(--n) {
                 fprintf(stderr, ":: snapwm :: missing fontset: %s\n", missing[n]);
+            }
 		XFreeStringList(missing);
 	}
 	if(font.fontset) {
@@ -334,7 +336,8 @@ void set_defaults() {
 
 void update_config() {
     unsigned int i, y, old_desktops = DESKTOPS, tmp = current_desktop;
-    
+    unsigned int tmpview = desktops[current_desktop].screen;
+
     XUngrabKey(dis, AnyKey, AnyModifier, root);
     XUngrabButton(dis, AnyButton, AnyModifier, root);
     if(font.fontset) XFreeFontSet(dis, font.fontset);
@@ -355,6 +358,7 @@ void update_config() {
         if(current_desktop > (DESKTOPS-1)) change_desktop(a);
     }
     init_desks();
+    view[tmpview].cd = tmp;
     if(STATUS_BAR == 0) {
         setup_status_bar();
         if(DESKTOPS != old_desktops) {
@@ -385,12 +389,13 @@ void update_config() {
     if(mode == 1 && head != NULL) {
         XMoveWindow(dis,current->win,current->x,2*desktops[DESKTOPS-1].h);
     }
-    for(i=0;i<DESKTOPS;++i)
+    for(i=0;i<DESKTOPS;++i) {
         desktops[i].master_size = (desktops[i].mode == 2) ? (desktops[i].h*msize)/100 : (desktops[i].w*msize)/100;
         if(numwins < 1) {
             Arg a = {.i = desktops[current_desktop].mode};
             switch_mode(a);
         }
+    }
     select_desktop(tmp);
 
     if(STATUS_BAR == 0) update_bar();

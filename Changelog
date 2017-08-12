@@ -1,3 +1,6 @@
+13/8/17
+  Minor fixes for window mappings and code cleanup
+
 21/8/16
   Apps started before the window manager are now managed
   Minimum window size set in rc.conf
