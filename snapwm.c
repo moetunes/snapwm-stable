@@ -244,7 +244,7 @@ static MonitorView view[5];
 static Barwin sb_bar[12];
 static Theme theme[10];
 static Iammanyfonts font;
-static key keys[120];
+static key keys[140];
 static Commands cmds[50];
 static Convenience convenience[40];
 static Positional positional[40];
@@ -522,11 +522,11 @@ void pop_window() {
 }
 
 void sticky_win(const Arg arg) {
-    if((arg.i) == current_desktop || focus == NULL) return;
+    if((arg.i-1) == current_desktop || focus == NULL) return;
     unsigned int tmp = current_desktop, i, j, stickied = 0;
 
     client *t, *c = focus;
-    select_desktop(arg.i);
+    select_desktop(arg.i-1);
     for(t=head;t;t=t->next)
         if(t->win == c->win) stickied = 1;
     if(stickied == 1) {
